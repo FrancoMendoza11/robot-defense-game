@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import TargetCursor from './TargetCursor';
 import Robot from './Robot';
+import naveImage from './assets/nave.png';
 import './App.css';
 
 function App() {
@@ -11,7 +12,6 @@ function App() {
   const gameAreaRef = useRef(null);
   const nextRobotId = useRef(0);
 
-  // Carriles visibles con puntos de inicio claros
   const lanes = [
     { id: 1, start: { x: '50%', y: '0%' }, end: { x: '50%', y: '50%' }, color: 'red' },
     { id: 2, start: { x: '50%', y: '100%' }, end: { x: '50%', y: '50%' }, color: 'blue' },
@@ -33,7 +33,7 @@ function App() {
       health: 100,
       speed: 1 + Math.random()
     };
-    
+
     setRobots(prev => [...prev, newRobot]);
   };
 
@@ -66,16 +66,16 @@ function App() {
   return (
     <div className="game-container" ref={gameAreaRef}>
       <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
-      
-      {/* Base visible */}
+
+      {/* Base */}
       <div className="base">
         <div className="health-bar">
           <div className="health-fill" style={{ width: `${health}%` }} />
         </div>
       </div>
-      
+
       <div className="score-display">Puntuación: {score}</div>
-      
+
       {!gameActive && (
         <div className="game-over">
           <h2>¡Juego Terminado!</h2>
@@ -88,29 +88,25 @@ function App() {
         </div>
       )}
 
-      {/* Carriles visibles */}
+      {/* Carriles como naves */}
       {lanes.map(lane => (
-        <div 
+        <img
           key={`lane-${lane.id}`}
+          src={naveImage}
+          alt="Nave"
           className="lane-marker"
           style={{
-            position: 'absolute',
             left: lane.start.x,
             top: lane.start.y,
-            width: '20px',
-            height: '20px',
-            backgroundColor: lane.color,
-            borderRadius: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 2,
-            opacity: 0.7
+            width: '150px',
+            height: '150px'
           }}
         />
       ))}
 
       {/* Robots */}
       {robots.map(robot => (
-        <Robot 
+        <Robot
           key={robot.id}
           {...robot}
           onDamage={handleDamage}

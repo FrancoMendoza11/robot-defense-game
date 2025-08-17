@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import robotImage from './assets/robot.png';
 
 const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
   const robotRef = useRef(null);
+  const [stuck, setStuck] = useState(false);
   const damageAmount = 20;
 
   useEffect(() => {
@@ -11,7 +12,6 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
 
     const area = gameAreaRef.current.getBoundingClientRect();
 
-    // Función para convertir porcentajes a píxeles
     const parsePosition = (pos, isWidth) => {
       if (typeof pos === 'string' && pos.includes('%')) {
         const percent = parseFloat(pos) / 100;
@@ -20,13 +20,11 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
       return parseFloat(pos);
     };
 
-    // Convertimos las posiciones del carril
     const startX = parsePosition(lane.start.x, true);
     const startY = parsePosition(lane.start.y, false);
     const endX = parsePosition(lane.end.x, true);
     const endY = parsePosition(lane.end.y, false);
 
-    // Configuración inicial precisa
     gsap.set(robotRef.current, {
       x: startX,
       y: startY,
@@ -34,31 +32,36 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
       scale: 1
     });
 
-    // Movimiento lineal directo sin rebote
+    const robotWidth = robotRef.current.offsetWidth;
+    const robotHeight = robotRef.current.offsetHeight;
+
+    // Ajustar la posición final al centro de la base
+    const finalX = endX - robotWidth / 2;
+    const finalY = endY - robotHeight / 2;
+
     const movement = gsap.to(robotRef.current, {
-      x: endX,
-      y: endY,
-      duration: 5, // 5 segundos de viaje
-      ease: "none", // Movimiento completamente lineal
-      onComplete: () => {
-        // Eliminamos el robot al llegar
-        onReachBase(id);
-      },
-      // Eliminamos cualquier modificador que pueda causar rebote
-      modifiers: {}
+      x: finalX,
+      y: finalY,
+      duration: 10,
+      ease: "none",
+      onComplete: () => setStuck(true)
     });
 
-    // Limpieza al desmontar
-    return () => {
-      movement.kill();
-    };
-  }, [id, lane, onReachBase, gameAreaRef]);
+    return () => movement.kill();
+  }, [id, lane, gameAreaRef]);
+
+  // Detecta si está "pegado" a la base
+  useEffect(() => {
+    if (stuck) {
+      onReachBase(id);
+    }
+  }, [stuck, id, onReachBase]);
 
   const handleClick = (e) => {
     e.stopPropagation();
     onDamage(id, damageAmount);
-    
-    // Animación de daño (sin afectar posición)
+
+    // Animación de daño
     gsap.to(robotRef.current, {
       scale: 0.8,
       duration: 0.1,
@@ -68,8 +71,9 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
   };
 
   return (
-    <div 
+    <div
       ref={robotRef}
+      className="robot"
       style={{
         position: 'absolute',
         width: '100px',
@@ -91,7 +95,7 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
           filter: 'drop-shadow(0 0 8px rgba(0, 255, 0, 0.8))'
         }}
       />
-      
+
       {/* Barra de salud */}
       <div style={{
         position: 'absolute',

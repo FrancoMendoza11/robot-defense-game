@@ -9,7 +9,7 @@ const TargetCursor = () => {
   useEffect(() => {
     if (!cursorRef.current) return;
 
-    // Oculta el cursor predeterminado
+
     document.body.style.cursor = 'none';
 
     // Animación de rotación constante
