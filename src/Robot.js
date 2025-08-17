@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
-import robotImage from './assets/robot.png';
+import robotImage from './assets/robot.gif';
 
 const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
   const robotRef = useRef(null);
@@ -76,8 +76,8 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
       className="robot"
       style={{
         position: 'absolute',
-        width: '100px',
-        height: '100px',
+        width: '145px',
+        height: '145px',
         transform: 'translate(-50%, -50%)',
         zIndex: 10,
         pointerEvents: 'auto'

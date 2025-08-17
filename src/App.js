@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import TargetCursor from './TargetCursor';
 import Robot from './Robot';
 import naveImage from './assets/nave.png';
+import baseImage from './assets/base.gif';
 import './App.css';
 
 function App() {
@@ -13,14 +14,14 @@ function App() {
   const nextRobotId = useRef(0);
 
   const lanes = [
-    { id: 1, start: { x: '50%', y: '0%' }, end: { x: '50%', y: '50%' }, color: 'red' },
-    { id: 2, start: { x: '50%', y: '100%' }, end: { x: '50%', y: '50%' }, color: 'blue' },
-    { id: 3, start: { x: '0%', y: '50%' }, end: { x: '50%', y: '50%' }, color: 'green' },
-    { id: 4, start: { x: '100%', y: '50%' }, end: { x: '50%', y: '50%' }, color: 'yellow' },
-    { id: 5, start: { x: '0%', y: '0%' }, end: { x: '50%', y: '50%' }, color: 'purple' },
-    { id: 6, start: { x: '100%', y: '100%' }, end: { x: '50%', y: '50%' }, color: 'orange' },
-    { id: 7, start: { x: '100%', y: '0%' }, end: { x: '50%', y: '50%' }, color: 'pink' },
-    { id: 8, start: { x: '0%', y: '100%' }, end: { x: '50%', y: '50%' }, color: 'cyan' }
+    { id: 1, start: { x: '50%', y: '5%' }, end: { x: '50%', y: '50%' }, rotation: 180 },
+    { id: 2, start: { x: '50%', y: '95%' }, end: { x: '50%', y: '50%' }, rotation: 0 },
+    { id: 3, start: { x: '5%', y: '50%' }, end: { x: '50%', y: '50%' }, rotation: 90 },
+    { id: 4, start: { x: '95%', y: '50%' }, end: { x: '50%', y: '50%' }, rotation: -90 },
+    { id: 5, start: { x: '8%', y: '8%' }, end: { x: '50%', y: '50%' }, rotation: 135 },
+    { id: 6, start: { x: '92%', y: '92%' }, end: { x: '50%', y: '50%' }, rotation: -45 },
+    { id: 7, start: { x: '92%', y: '8%' }, end: { x: '50%', y: '50%' }, rotation: -135 },
+    { id: 8, start: { x: '8%', y: '92%' }, end: { x: '50%', y: '50%' }, rotation: 45 }
   ];
 
   const spawnRobot = () => {
@@ -67,8 +68,9 @@ function App() {
     <div className="game-container" ref={gameAreaRef}>
       <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
 
-      {/* Base */}
+      {/* Base con imagen */}
       <div className="base">
+        <img src={baseImage} alt="Base" className="base-image" />
         <div className="health-bar">
           <div className="health-fill" style={{ width: `${health}%` }} />
         </div>
@@ -98,8 +100,10 @@ function App() {
           style={{
             left: lane.start.x,
             top: lane.start.y,
-            width: '150px',
-            height: '150px'
+            width: '120px',
+            height: '120px',
+            transform: `translate(-50%, -50%) rotate(${lane.rotation}deg)`,
+            "--rotation": `${lane.rotation}deg`
           }}
         />
       ))}
