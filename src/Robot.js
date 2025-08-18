@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import robotImage from './assets/robot.gif';
 
-const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
+const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused }) => {
   const robotRef = useRef(null);
+  const movementRef = useRef(null);
   const [stuck, setStuck] = useState(false);
   const damageAmount = 20;
 
@@ -35,20 +36,28 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
     const robotWidth = robotRef.current.offsetWidth;
     const robotHeight = robotRef.current.offsetHeight;
 
-    // Ajustar la posición final al centro de la base
     const finalX = endX - robotWidth / 2;
     const finalY = endY - robotHeight / 2;
 
-    const movement = gsap.to(robotRef.current, {
+    // Timeline de movimiento
+    movementRef.current = gsap.to(robotRef.current, {
       x: finalX,
       y: finalY,
       duration: 10,
       ease: "none",
+      paused: paused, // arranca pausado si la prop es true
       onComplete: () => setStuck(true)
     });
 
-    return () => movement.kill();
+    return () => movementRef.current.kill();
   }, [id, lane, gameAreaRef]);
+
+  // Detecta cambios en paused
+  useEffect(() => {
+    if (movementRef.current) {
+      paused ? movementRef.current.pause() : movementRef.current.play();
+    }
+  }, [paused]);
 
   // Detecta si está "pegado" a la base
   useEffect(() => {
@@ -61,7 +70,6 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
     e.stopPropagation();
     onDamage(id, damageAmount);
 
-    // Animación de daño
     gsap.to(robotRef.current, {
       scale: 0.8,
       duration: 0.1,
@@ -95,7 +103,6 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef }) => {
           filter: 'drop-shadow(0 0 8px rgba(0, 255, 0, 0.8))'
         }}
       />
-
       {/* Barra de salud */}
       <div style={{
         position: 'absolute',
