@@ -13,10 +13,12 @@ function App() {
   const [gameActive, setGameActive] = useState(true);
   const [gameStarted, setGameStarted] = useState(false);
   const [round, setRound] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(45); // duración de ronda
+  const [timeLeft, setTimeLeft] = useState(45);
   const [inShop, setInShop] = useState(false);
   const [paused, setPaused] = useState(false);
   const [damageMultiplier, setDamageMultiplier] = useState(1);
+
+  const [showStory, setShowStory] = useState(false);
 
   const gameAreaRef = useRef(null);
   const nextRobotId = useRef(0);
@@ -31,6 +33,17 @@ function App() {
     { id: 7, start: { x: '92%', y: '8%' }, end: { x: '50%', y: '50%' }, rotation: -135 },
     { id: 8, start: { x: '8%', y: '92%' }, end: { x: '50%', y: '50%' }, rotation: 45 }
   ];
+
+  // Historia: se esconde sola después de 25s si no hacen click
+  useEffect(() => {
+    if (showStory) {
+      const timer = setTimeout(() => {
+        setShowStory(false);
+        setGameStarted(true); // arranca el juego al terminar historia
+      }, 25000);
+      return () => clearTimeout(timer);
+    }
+  }, [showStory]);
 
   // Detectar ESCAPE para pausar
   useEffect(() => {
@@ -65,7 +78,7 @@ function App() {
         const newHealth = robot.health - totalDamage;
         if (newHealth <= 0) {
           setTimeout(() => setRobots(prev => prev.filter(r => r.id !== id)), 100);
-          setScore(prev => prev + 1); // 1 punto por robot
+          setScore(prev => prev + 1);
         }
         return { ...robot, health: newHealth };
       }
@@ -80,7 +93,7 @@ function App() {
     if (health <= 10) setGameActive(false);
   };
 
-  // Función de compra en tienda
+  // Comprar en tienda
   const buyItem = (cost, effect) => {
     if (score >= cost) {
       setScore(prev => prev - cost);
@@ -88,7 +101,7 @@ function App() {
     }
   };
 
-  // Temporizador de ronda y descanso
+  // Temporizador rondas + shop
   useEffect(() => {
     if (!gameStarted || paused || !gameActive) return;
 
@@ -97,13 +110,12 @@ function App() {
         if (prev <= 1) {
           if (!inShop) {
             setInShop(true);
-            setRobots([]); // eliminar robots al entrar a tienda
-            return 30; // 30s de descanso
+            setRobots([]);
+            return 30;
           } else {
-            // fin de descanso
             setInShop(false);
             setRound(prevRound => prevRound + 1);
-            return 45; // nueva ronda
+            return 45;
           }
         }
         return prev - 1;
@@ -159,7 +171,7 @@ function App() {
         </div>
       )}
 
-      {/* Carriles como naves */}
+      {/* Carriles */}
       {lanes.map(lane => (
         <img
           key={`lane-${lane.id}`}
@@ -189,9 +201,26 @@ function App() {
         />
       ))}
 
-      {/* Menu Inicial */}
-      {!gameStarted && (
-        <div className="menu-screen" onClick={() => setGameStarted(true)}>
+      {/* Historia */}
+      {showStory && (
+        <div className="story-screen" onClick={() => {
+          setShowStory(false);
+          setGameStarted(true);
+        }}>
+          <div className="story-crawl">
+            <p>Los Defenders iban rumbo a una misión...</p>
+            <p>Cuando fueron interceptados por los Lombricons.</p>
+            <p>¡Están rodeados!</p>
+            <p>Vos podés ayudarlos.</p>
+            <p>¿Cuántas rondas sobrevivirán?</p>
+            <p>Depende de vos.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Menú principal */}
+      {!gameStarted && !showStory && (
+        <div className="menu-screen" onClick={() => setShowStory(true)}>
           <img src={menuGif} alt="Menu Fondo" className="menu-bg" />
           <div className="menu-title">The Defenders</div>
           <div className="menu-instruction">START</div>

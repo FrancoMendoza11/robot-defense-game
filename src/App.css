@@ -229,3 +229,35 @@
   transform: scale(1.05);
   background-color: rgba(0, 128, 0, 1);
 }
+
+.story-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: black url('./assets/fondo.gif');
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 100;
+  cursor: pointer;
+}
+
+.story-crawl {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  color: #00FF00;
+  text-align: center;
+  width: 80%;
+  line-height: 2;
+  transform-origin: bottom center;
+  animation: crawl 25s linear forwards;
+}
+
+@keyframes crawl {
+  0% { transform: rotateX(25deg) translateY(100%); }
+  100% { transform: rotateX(25deg) translateY(-300%); }
+}
+
