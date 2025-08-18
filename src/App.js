@@ -5,6 +5,7 @@ import Robot from './Robot';
 import baseImage from './assets/base.gif';
 import menuGif from './assets/menu.gif';
 import defenderGif from './assets/robotdefender.gif';
+import SpaceBackground from './SpaceBackground';
 import './App.css';
 
 function App() {
@@ -139,7 +140,7 @@ function App() {
     return () => clearInterval(spawnInterval);
   }, [gameStarted, paused, inShop, gameActive, round]);
 
-  // 🚀 Movimiento automático del Defender actualizado
+  
   useEffect(() => {
   if (!defenderUnlocked || !gameActive || paused || inShop) return;
 
@@ -191,93 +192,96 @@ function App() {
   return () => clearInterval(interval);
 }, [defenderUnlocked, robots, defenderDamage, inShop, paused, gameActive]);
 
-  return (
-    <div className="game-container" ref={gameAreaRef}>
-      <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
+return (
+  <div className="game-container" ref={gameAreaRef}>
+    {/* Fondo animado */}
+    <SpaceBackground />
 
-      {/* Base */}
-      <div className="base">
-        <img src={baseImage} alt="Base" className="base-image" draggable="false" />
-        <div className="health-bar">
-          <div className="health-fill" style={{ width: `${health}%` }} />
-          <span className="health-text">{health}%</span>
+    <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
+
+    {/* Base */}
+    <div className="base">
+      <img src={baseImage} alt="Base" className="base-image" draggable="false" />
+      <div className="health-bar">
+        <div className="health-fill" style={{ width: `${health}%` }} />
+        <span className="health-text">{health}%</span>
+      </div>
+    </div>
+
+    {/* Score */}
+    <div className="score-display">{score}</div>
+
+    {/* Ronda y Timer */}
+    <div className="round-timer">
+      Ronda: {round} | Tiempo: {timeLeft}s
+    </div>
+
+    {/* Defender */}
+    {defenderUnlocked && (
+      <img
+        src={defenderGif}
+        alt="Defender"
+        className="defender"
+        style={{ left: defenderPosition.x, top: defenderPosition.y }}
+        draggable="false"
+      />
+    )}
+
+    {/* Game Over */}
+    {!gameActive && (
+      <div className="game-over">
+        <h2>¡Juego Terminado!</h2>
+        <button onClick={() => {
+          setHealth(100);
+          setScore(0);
+          setRobots([]);
+          setGameActive(true);
+          setGameStarted(false);
+          setRound(1);
+          setTimeLeft(45);
+          setDamageMultiplier(1);
+          setDefenderUnlocked(false);
+          setDefenderDamage(10);
+        }}>Reiniciar</button>
+      </div>
+    )}
+
+    {/* Robots */}
+    {robots.map(robot => (
+      <Robot
+        key={robot.id}
+        {...robot}
+        onDamage={handleDamage}
+        onReachBase={handleReachBase}
+        gameAreaRef={gameAreaRef}
+        paused={paused || inShop}
+      />
+    ))}
+
+    {/* Historia */}
+    {showStory && (
+      <div className="story-screen" onClick={() => { setShowStory(false); setGameStarted(true); }}>
+        <div className="story-crawl">
+          <p>Los Defenders iban rumbo a una misión...</p>
+          <p>Cuando fueron interceptados por los Lombricons.</p>
+          <p>¡Están rodeados!</p>
+          <p>Vos podés ayudarlos.</p>
+          <p>¿Cuántas rondas sobrevivirán?</p>
+          <p>Depende de vos.</p>
         </div>
       </div>
+    )}
 
-      {/* Score */}
-      <div className="score-display">{score}</div>
-
-      {/* Ronda y Timer */}
-      <div className="round-timer">
-        Ronda: {round} | Tiempo: {timeLeft}s
+    {/* Menú principal */}
+    {!gameStarted && !showStory && (
+      <div className="menu-screen" onClick={() => setShowStory(true)}>
+        <img src={menuGif} alt="Menu Fondo" className="menu-bg" draggable="false" />
+        <div className="menu-title">The Defenders</div>
+        <div className="menu-instruction">START</div>
       </div>
+    )}
 
-      {/* Defender */}
-      {defenderUnlocked && (
-        <img
-          src={defenderGif}
-          alt="Defender"
-          className="defender"
-          style={{ left: defenderPosition.x, top: defenderPosition.y }}
-          draggable="false"
-        />
-      )}
-
-      {/* Game Over */}
-      {!gameActive && (
-        <div className="game-over">
-          <h2>¡Juego Terminado!</h2>
-          <button onClick={() => {
-            setHealth(100);
-            setScore(0);
-            setRobots([]);
-            setGameActive(true);
-            setGameStarted(false);
-            setRound(1);
-            setTimeLeft(45);
-            setDamageMultiplier(1);
-            setDefenderUnlocked(false);
-            setDefenderDamage(10);
-          }}>Reiniciar</button>
-        </div>
-      )}
-
-      {/* Robots */}
-      {robots.map(robot => (
-        <Robot
-          key={robot.id}
-          {...robot}
-          onDamage={handleDamage}
-          onReachBase={handleReachBase}
-          gameAreaRef={gameAreaRef}
-          paused={paused || inShop}
-        />
-      ))}
-
-      {/* Historia */}
-      {showStory && (
-        <div className="story-screen" onClick={() => { setShowStory(false); setGameStarted(true); }}>
-          <div className="story-crawl">
-            <p>Los Defenders iban rumbo a una misión...</p>
-            <p>Cuando fueron interceptados por los Lombricons.</p>
-            <p>¡Están rodeados!</p>
-            <p>Vos podés ayudarlos.</p>
-            <p>¿Cuántas rondas sobrevivirán?</p>
-            <p>Depende de vos.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Menú principal */}
-      {!gameStarted && !showStory && (
-        <div className="menu-screen" onClick={() => setShowStory(true)}>
-          <img src={menuGif} alt="Menu Fondo" className="menu-bg" draggable="false" />
-          <div className="menu-title">The Defenders</div>
-          <div className="menu-instruction">START</div>
-        </div>
-      )}
-
-      {/* Tienda */}
+     {/* Tienda */}
       {inShop && (
         <div className="shop-overlay">
           <div className="shop-box">
@@ -330,6 +334,7 @@ function App() {
       )}
     </div>
   );
+
 }
 
 export default App;
