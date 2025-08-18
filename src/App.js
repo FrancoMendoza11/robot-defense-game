@@ -4,6 +4,7 @@ import Robot from './Robot';
 import naveImage from './assets/nave.png';
 import baseImage from './assets/base.gif';
 import menuGif from './assets/menu.gif';
+import defenderGif from './assets/robotdefender.gif';
 import './App.css';
 
 function App() {
@@ -17,8 +18,12 @@ function App() {
   const [inShop, setInShop] = useState(false);
   const [paused, setPaused] = useState(false);
   const [damageMultiplier, setDamageMultiplier] = useState(1);
-
   const [showStory, setShowStory] = useState(false);
+
+  // 🚀 Defender
+  const [defenderUnlocked, setDefenderUnlocked] = useState(false);
+  const [defenderDamage, setDefenderDamage] = useState(10);
+  const [defenderPosition, setDefenderPosition] = useState({ x: 300, y: 300 });
 
   const gameAreaRef = useRef(null);
   const nextRobotId = useRef(0);
@@ -34,18 +39,18 @@ function App() {
     { id: 8, start: { x: '8%', y: '92%' }, end: { x: '50%', y: '50%' }, rotation: 45 }
   ];
 
-  // Historia: se esconde sola después de 25s si no hacen click
+  // Historia
   useEffect(() => {
     if (showStory) {
       const timer = setTimeout(() => {
         setShowStory(false);
-        setGameStarted(true); // arranca el juego al terminar historia
+        setGameStarted(true);
       }, 25000);
       return () => clearTimeout(timer);
     }
   }, [showStory]);
 
-  // Detectar ESCAPE para pausar
+  // Pausa con ESC
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && gameStarted && !inShop) {
@@ -64,8 +69,8 @@ function App() {
     const newRobot = {
       id: nextRobotId.current++,
       lane,
-      health: 100,
-      speed: 0.4 + 0.08 * difficultyFactor + Math.random() * 0.4
+      health: round >= 10 ? 200 : 100, // enemigos más fuertes desde ronda 10
+      speed: (round >= 10 ? 0.9 : 0.5) + Math.random() * 0.4
     };
     setRobots(prev => [...prev, newRobot]);
   };
@@ -93,7 +98,7 @@ function App() {
     if (health <= 10) setGameActive(false);
   };
 
-  // Comprar en tienda
+  // Comprar
   const buyItem = (cost, effect) => {
     if (score >= cost) {
       setScore(prev => prev - cost);
@@ -101,7 +106,7 @@ function App() {
     }
   };
 
-  // Temporizador rondas + shop
+  // Rondas y tienda
   useEffect(() => {
     if (!gameStarted || paused || !gameActive) return;
 
@@ -133,6 +138,42 @@ function App() {
     return () => clearInterval(spawnInterval);
   }, [gameStarted, paused, inShop, gameActive, round]);
 
+  // 🚀 Movimiento automático del Defender
+  useEffect(() => {
+    if (!defenderUnlocked || !gameActive || paused || inShop) return;
+
+    const interval = setInterval(() => {
+      setDefenderPosition(prevPos => {
+        if (robots.length === 0) return prevPos;
+        const target = robots[0];
+        let newX = prevPos.x;
+        let newY = prevPos.y;
+
+        if (target.lane.end.x > prevPos.x) newX += 2;
+        if (target.lane.end.x < prevPos.x) newX -= 2;
+        if (target.lane.end.y > prevPos.y) newY += 2;
+        if (target.lane.end.y < prevPos.y) newY -= 2;
+
+        // Colisión y daño
+        setRobots(prevRobots => prevRobots.map(r => {
+          if (Math.abs(newX - r.lane.end.x) < 40 && Math.abs(newY - r.lane.end.y) < 40) {
+            const newHealth = r.health - defenderDamage;
+            if (newHealth <= 0) {
+              setScore(prev => prev + 5);
+              return null;
+            }
+            return { ...r, health: newHealth };
+          }
+          return r;
+        }).filter(r => r !== null));
+
+        return { x: newX, y: newY };
+      });
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [defenderUnlocked, robots, defenderDamage, inShop, paused, gameActive]);
+
   return (
     <div className="game-container" ref={gameAreaRef}>
       <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
@@ -154,6 +195,16 @@ function App() {
         Ronda: {round} | Tiempo: {timeLeft}s
       </div>
 
+      {/* Defender */}
+      {defenderUnlocked && (
+        <img
+          src={defenderGif}
+          alt="Defender"
+          className="defender"
+          style={{ left: defenderPosition.x, top: defenderPosition.y }}
+        />
+      )}
+
       {/* Game Over */}
       {!gameActive && (
         <div className="game-over">
@@ -167,6 +218,8 @@ function App() {
             setRound(1);
             setTimeLeft(45);
             setDamageMultiplier(1);
+            setDefenderUnlocked(false);
+            setDefenderDamage(10);
           }}>Reiniciar</button>
         </div>
       )}
@@ -183,8 +236,7 @@ function App() {
             top: lane.start.y,
             width: '120px',
             height: '120px',
-            transform: `translate(-50%, -50%) rotate(${lane.rotation}deg)`,
-            "--rotation": `${lane.rotation}deg`
+            transform: `translate(-50%, -50%) rotate(${lane.rotation}deg)`
           }}
         />
       ))}
@@ -228,19 +280,49 @@ function App() {
       )}
 
       {/* Tienda */}
-      {inShop && (
-        <div className="menu-screen">
-          <div className="menu-title">TIENDA DE PUNTOS</div>
-          <div className="shop-container">
-            <div className="shop-item" onClick={() => buyItem(5, () => setHealth(prev => Math.min(prev + 20, 100)))}>
-              +VIDA <br/> <small>5 pts</small>
-            </div>
-            <div className="shop-item" onClick={() => buyItem(7, () => setDamageMultiplier(prev => prev + 0.2))}>
-              +DAÑO <br/> <small>7 pts</small>
-            </div>
-          </div>
+	{inShop && (
+  <div className="shop-overlay">
+    <div className="shop-box">
+      <h2 className="shop-title">TIENDA DE PUNTOS</h2>
+      <div className="shop-grid">
+        <div className="shop-item" onClick={() => buyItem(5, () => setHealth(prev => Math.min(prev + 20, 100)))}>
+          <p className="item-name">+VIDA</p>
+          <p className="item-cost">5 pts</p>
         </div>
-      )}
+        <div className="shop-item" onClick={() => buyItem(7, () => setDamageMultiplier(prev => prev + 0.2))}>
+          <p className="item-name">+DAÑO</p>
+          <p className="item-cost">7 pts</p>
+        </div>
+        {!defenderUnlocked ? (
+          <div className="shop-item" onClick={() => buyItem(100, () => setDefenderUnlocked(true))}>
+            <p className="item-name">ROBOT DEFENDER</p>
+            <p className="item-cost">100 pts</p>
+          </div>
+        ) : (
+          <div className="shop-item" onClick={() => buyItem(50, () => setDefenderDamage(prev => prev + 10))}>
+            <p className="item-name">Mejorar DEFENDER</p>
+            <p className="item-cost">50 pts</p>
+          </div>
+        )}
+      </div>
+      <p className="shop-score">Puntos: {score}</p>
+
+      {/* Botón para saltar la tienda */}
+      <button
+        className="shop-continue"
+        onClick={() => {
+          setInShop(false);
+          setRound(prev => prev + 1);
+          setTimeLeft(45);
+        }}
+      >
+        CONTINUAR
+      </button>
+    </div>
+  </div>
+)}
+
+
 
       {/* Menú de pausa */}
       {paused && (
