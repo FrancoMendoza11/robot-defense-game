@@ -3,7 +3,21 @@
 .game-container, 
 .game-container * {
   cursor: none !important;
+  user-select: none;
 }
+
+.robot img,
+.shop-item img,
+.base-image {
+  user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-drag: none;
+}
+
+
 
 .game-container {
   position: relative;
@@ -510,3 +524,13 @@
   transform: scale(1.1);
   background: rgba(0, 255, 0, 0.2);
 }
+
+.defender {
+  position: absolute;
+  width: 200px;   
+  height: 200px;  
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+}
+

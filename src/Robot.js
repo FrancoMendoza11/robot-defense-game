@@ -6,7 +6,6 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused })
   const robotRef = useRef(null);
   const movementRef = useRef(null);
   const [stuck, setStuck] = useState(false);
-  const [hovered, setHovered] = useState(false); // para hover
   const damageAmount = 20;
 
   // Movimiento GSAP
@@ -67,22 +66,6 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused })
     }
   }, [stuck, id, onReachBase]);
 
-  useEffect(() => {
-    if (!hovered) return;
-
-    const interval = setInterval(() => {
-      onDamage(id, damageAmount);
-      gsap.to(robotRef.current, {
-        scale: 0.8,
-        duration: 0.1,
-        yoyo: true,
-        repeat: 1
-      });
-    }, 320); // aplica daño cada X ms
-
-    return () => clearInterval(interval);
-  }, [hovered, id, onDamage]);
-
   // Daño al click
   const handleClick = (e) => {
     e.stopPropagation();
@@ -109,8 +92,6 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused })
         cursor: 'pointer'
       }}
       onClick={handleClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <img
         src={robotImage}
@@ -122,6 +103,8 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused })
           imageRendering: 'pixelated',
           filter: 'drop-shadow(0 0 8px rgba(0, 255, 0, 0.8))'
         }}
+    draggable="false"
+
       />
       {/* Barra de salud */}
       <div style={{
