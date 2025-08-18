@@ -296,7 +296,7 @@ return (
                 <p className="item-cost">7 pts</p>
               </div>
               {!defenderUnlocked ? (
-                <div className="shop-item" onClick={() => buyItem(1, () => setDefenderUnlocked(true))}>
+                <div className="shop-item" onClick={() => buyItem(100, () => setDefenderUnlocked(true))}>
                   <p className="item-name">ROBOT DEFENDER</p>
                   <p className="item-cost">100 pts</p>
                 </div>
