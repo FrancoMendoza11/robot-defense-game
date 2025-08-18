@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import robotImage from './assets/robot.gif';
+import shootSoundFile from "./assets/sounds/shoot.mp3";
+import { Howl } from "howler";
+
+// Creamos la instancia del sonido
+const shootSound = new Howl({
+  src: [shootSoundFile],
+  volume: 0.6, // podés ajustar el volumen
+});
 
 const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused }) => {
   const robotRef = useRef(null);
@@ -69,6 +77,7 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused })
   // Daño al click
   const handleClick = (e) => {
     e.stopPropagation();
+    shootSound.play();
     onDamage(id, damageAmount);
     gsap.to(robotRef.current, {
       scale: 0.8,

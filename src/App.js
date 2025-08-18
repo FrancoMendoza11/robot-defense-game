@@ -6,7 +6,16 @@ import baseImage from './assets/base.gif';
 import menuGif from './assets/menu.gif';
 import defenderGif from './assets/robotdefender.gif';
 import SpaceBackground from './SpaceBackground';
+import BackgroundMusic from "./BackgroundMusic";
 import './App.css';
+import shootSoundFile from "./assets/sounds/shoot.mp3";
+import { Howl } from "howler";
+
+// Creamos la instancia del sonido
+const shootSound = new Howl({
+  src: [shootSoundFile],
+  volume: 0.6, // podés ajustar el volumen
+});
 
 function App() {
   const [health, setHealth] = useState(100);
@@ -174,7 +183,7 @@ function App() {
 
       // Colisión exacta: daño al contacto
       setRobots(prevRobots => prevRobots.map(r => {
-        if (Math.abs(newX - r.x) < 30 && Math.abs(newY - r.y) < 30) { // contacto más preciso
+        if (Math.abs(newX - r.x) < 30 && Math.abs(newY - r.y) < 30) { 
           const newHealth = r.health - defenderDamage;
           if (newHealth <= 0) {
             setScore(prev => prev + 5);
@@ -189,13 +198,32 @@ function App() {
     });
   }, 50); // intervalo más rápido para suavidad
 
+
   return () => clearInterval(interval);
 }, [defenderUnlocked, robots, defenderDamage, inShop, paused, gameActive]);
+
+useEffect(() => {
+  const gameArea = gameAreaRef.current;
+  if (!gameArea) return;
+
+  const handleClick = () => {
+    shootSound.play();
+  };
+
+  gameArea.addEventListener("click", handleClick);
+
+  return () => {
+    gameArea.removeEventListener("click", handleClick);
+  };
+}, []);
+
 
 return (
   <div className="game-container" ref={gameAreaRef}>
     {/* Fondo animado */}
     <SpaceBackground />
+    <BackgroundMusic play={gameStarted || showStory} />
+
 
     <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
 
@@ -273,13 +301,18 @@ return (
     )}
 
     {/* Menú principal */}
-    {!gameStarted && !showStory && (
-      <div className="menu-screen" onClick={() => setShowStory(true)}>
-        <img src={menuGif} alt="Menu Fondo" className="menu-bg" draggable="false" />
-        <div className="menu-title">The Defenders</div>
-        <div className="menu-instruction">START</div>
-      </div>
-    )}
+	{!gameStarted && !showStory && (
+	  <div
+	    className="menu-screen"
+	    onClick={() => {
+	      setShowStory(true);
+	    }}
+	  >
+	    <img src={menuGif} alt="Menu Fondo" className="menu-bg" draggable="false" />
+	    <div className="menu-title">The Defenders</div>
+	    <div className="menu-instruction">START</div>
+	  </div>
+	)}
 
      {/* Tienda */}
       {inShop && (
@@ -334,6 +367,7 @@ return (
       )}
     </div>
   );
+
 
 }
 
