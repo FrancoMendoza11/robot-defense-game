@@ -10,12 +10,41 @@ import BackgroundMusic from "./BackgroundMusic";
 import './App.css';
 import shootSoundFile from "./assets/sounds/shoot.mp3";
 import { Howl } from "howler";
+import { motion } from "framer-motion";
 
-// Creamos la instancia del sonido
+//  Precargar el sonido y permitir disparos rápidos sin delay
 const shootSound = new Howl({
   src: [shootSoundFile],
-  volume: 0.6, // podés ajustar el volumen
+  volume: 0.6,
+  html5: false,  // usa Web Audio API (más rápido que HTML5 audio)
+  preload: true, // precargar en memoria
 });
+
+// "Calentar" el buffer apenas arranca el juego para que no haya delay la primera vez
+shootSound.once("load", () => {
+  shootSound.volume(0);
+  const id = shootSound.play();
+  shootSound.stop(id);
+  shootSound.volume(0.6);
+});
+
+// Efecto visual de disparo
+function ClickEffect({ x, y, onComplete }) {
+  return (
+    <motion.div
+      className="click-effect"
+      style={{
+        left: x - 16,
+        top: y - 16,
+        pointerEvents: "none",
+      }}
+      initial={{ scale: 0.3, opacity: 1 }}
+      animate={{ scale: 2, opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      onAnimationComplete={onComplete}
+    />
+  );
+}
 
 function App() {
   const [health, setHealth] = useState(100);
@@ -34,6 +63,8 @@ function App() {
   const [defenderUnlocked, setDefenderUnlocked] = useState(false);
   const [defenderDamage, setDefenderDamage] = useState(10);
   const [defenderPosition, setDefenderPosition] = useState({ x: 300, y: 300 });
+
+  const [clickEffects, setClickEffects] = useState([]);
 
   const gameAreaRef = useRef(null);
   const nextRobotId = useRef(0);
@@ -149,172 +180,161 @@ function App() {
     return () => clearInterval(spawnInterval);
   }, [gameStarted, paused, inShop, gameActive, round]);
 
-  
+  // Defender AI
   useEffect(() => {
-  if (!defenderUnlocked || !gameActive || paused || inShop) return;
+    if (!defenderUnlocked || !gameActive || paused || inShop) return;
 
-  const interval = setInterval(() => {
-    setDefenderPosition(prevPos => {
-      if (robots.length === 0) return prevPos;
+    const interval = setInterval(() => {
+      setDefenderPosition(prevPos => {
+        if (robots.length === 0) return prevPos;
 
-      // Elegir el robot más cercano
-      const target = robots.reduce((closest, r) => {
-        const dist = Math.hypot(r.x - prevPos.x, r.y - prevPos.y);
-        return (!closest || dist < closest.dist) ? { robot: r, dist } : closest;
-      }, null)?.robot;
+        const target = robots.reduce((closest, r) => {
+          const dist = Math.hypot(r.x - prevPos.x, r.y - prevPos.y);
+          return (!closest || dist < closest.dist) ? { robot: r, dist } : closest;
+        }, null)?.robot;
 
-      if (!target) return prevPos;
+        if (!target) return prevPos;
 
-      // Calcular movimiento
-      let dx = target.x - prevPos.x;
-      let dy = target.y - prevPos.y;
-      const dist = Math.hypot(dx, dy);
-      const speed = 8; // velocidad más rápida
-      if (dist > speed) {
-        dx = (dx / dist) * speed;
-        dy = (dy / dist) * speed;
-      } else {
-        dx = dx;
-        dy = dy;
-      }
-
-      const newX = prevPos.x + dx;
-      const newY = prevPos.y + dy;
-
-      // Colisión exacta: daño al contacto
-      setRobots(prevRobots => prevRobots.map(r => {
-        if (Math.abs(newX - r.x) < 30 && Math.abs(newY - r.y) < 30) { 
-          const newHealth = r.health - defenderDamage;
-          if (newHealth <= 0) {
-            setScore(prev => prev + 5);
-            return null;
-          }
-          return { ...r, health: newHealth };
+        let dx = target.x - prevPos.x;
+        let dy = target.y - prevPos.y;
+        const dist = Math.hypot(dx, dy);
+        const speed = 8;
+        if (dist > speed) {
+          dx = (dx / dist) * speed;
+          dy = (dy / dist) * speed;
         }
-        return r;
-      }).filter(r => r !== null));
 
-      return { x: newX, y: newY };
-    });
-  }, 50); // intervalo más rápido para suavidad
+        const newX = prevPos.x + dx;
+        const newY = prevPos.y + dy;
 
+        setRobots(prevRobots => prevRobots.map(r => {
+          if (Math.abs(newX - r.x) < 30 && Math.abs(newY - r.y) < 30) {
+            const newHealth = r.health - defenderDamage;
+            if (newHealth <= 0) {
+              setScore(prev => prev + 5);
+              return null;
+            }
+            return { ...r, health: newHealth };
+          }
+          return r;
+        }).filter(r => r !== null));
 
-  return () => clearInterval(interval);
-}, [defenderUnlocked, robots, defenderDamage, inShop, paused, gameActive]);
+        return { x: newX, y: newY };
+      });
+    }, 50);
 
-useEffect(() => {
-  const gameArea = gameAreaRef.current;
-  if (!gameArea) return;
+    return () => clearInterval(interval);
+  }, [defenderUnlocked, robots, defenderDamage, inShop, paused, gameActive]);
 
-  const handleClick = () => {
-    shootSound.play();
-  };
+  // 🚀 Disparos con sonido instantáneo + efecto visual
+  useEffect(() => {
+    const gameArea = gameAreaRef.current;
+    if (!gameArea) return;
 
-  gameArea.addEventListener("click", handleClick);
+    const handleClick = (e) => {
+      shootSound.play();
 
-  return () => {
-    gameArea.removeEventListener("click", handleClick);
-  };
-}, []);
+      const rect = gameArea.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
+      setClickEffects((prev) => [
+        ...prev,
+        { id: Date.now(), x, y }
+      ]);
+    };
 
-return (
-  <div className="game-container" ref={gameAreaRef}>
-    {/* Fondo animado */}
-    <SpaceBackground />
-    <BackgroundMusic play={gameStarted || showStory} />
+    gameArea.addEventListener("click", handleClick);
+    return () => gameArea.removeEventListener("click", handleClick);
+  }, []);
 
+  return (
+    <div className="game-container" ref={gameAreaRef}>
+      <SpaceBackground />
+      <BackgroundMusic play={gameStarted || showStory} />
+      <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
 
-    <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
-
-    {/* Base */}
-    <div className="base">
-      <img src={baseImage} alt="Base" className="base-image" draggable="false" />
-      <div className="health-bar">
-        <div className="health-fill" style={{ width: `${health}%` }} />
-        <span className="health-text">{health}%</span>
-      </div>
-    </div>
-
-    {/* Score */}
-    <div className="score-display">{score}</div>
-
-    {/* Ronda y Timer */}
-    <div className="round-timer">
-      Ronda: {round} | Tiempo: {timeLeft}s
-    </div>
-
-    {/* Defender */}
-    {defenderUnlocked && (
-      <img
-        src={defenderGif}
-        alt="Defender"
-        className="defender"
-        style={{ left: defenderPosition.x, top: defenderPosition.y }}
-        draggable="false"
-      />
-    )}
-
-    {/* Game Over */}
-    {!gameActive && (
-      <div className="game-over">
-        <h2>¡Juego Terminado!</h2>
-        <button onClick={() => {
-          setHealth(100);
-          setScore(0);
-          setRobots([]);
-          setGameActive(true);
-          setGameStarted(false);
-          setRound(1);
-          setTimeLeft(45);
-          setDamageMultiplier(1);
-          setDefenderUnlocked(false);
-          setDefenderDamage(10);
-        }}>Reiniciar</button>
-      </div>
-    )}
-
-    {/* Robots */}
-    {robots.map(robot => (
-      <Robot
-        key={robot.id}
-        {...robot}
-        onDamage={handleDamage}
-        onReachBase={handleReachBase}
-        gameAreaRef={gameAreaRef}
-        paused={paused || inShop}
-      />
-    ))}
-
-    {/* Historia */}
-    {showStory && (
-      <div className="story-screen" onClick={() => { setShowStory(false); setGameStarted(true); }}>
-        <div className="story-crawl">
-          <p>Los Defenders iban rumbo a una misión...</p>
-          <p>Cuando fueron interceptados por los Lombricons.</p>
-          <p>¡Están rodeados!</p>
-          <p>Vos podés ayudarlos.</p>
-          <p>¿Cuántas rondas sobrevivirán?</p>
-          <p>Depende de vos.</p>
+      {/* Base */}
+      <div className="base">
+        <img src={baseImage} alt="Base" className="base-image" draggable="false" />
+        <div className="health-bar">
+          <div className="health-fill" style={{ width: `${health}%` }} />
+          <span className="health-text">{health}%</span>
         </div>
       </div>
-    )}
 
-    {/* Menú principal */}
-	{!gameStarted && !showStory && (
-	  <div
-	    className="menu-screen"
-	    onClick={() => {
-	      setShowStory(true);
-	    }}
-	  >
-	    <img src={menuGif} alt="Menu Fondo" className="menu-bg" draggable="false" />
-	    <div className="menu-title">The Defenders</div>
-	    <div className="menu-instruction">START</div>
-	  </div>
-	)}
+      {/* Score */}
+      <div className="score-display">{score}</div>
 
-     {/* Tienda */}
+      {/* Ronda y Timer */}
+      <div className="round-timer">
+        Ronda: {round} | Tiempo: {timeLeft}s
+      </div>
+
+      {/* Defender */}
+      {defenderUnlocked && (
+        <img
+          src={defenderGif}
+          alt="Defender"
+          className="defender"
+          style={{ left: defenderPosition.x, top: defenderPosition.y }}
+          draggable="false"
+        />
+      )}
+
+      {/* Robots */}
+      {robots.map(robot => (
+        <Robot
+          key={robot.id}
+          {...robot}
+          onDamage={handleDamage}
+          onReachBase={handleReachBase}
+          gameAreaRef={gameAreaRef}
+          paused={paused || inShop}
+        />
+      ))}
+
+      {/* Efectos de disparo */}
+      {clickEffects.map((ef) => (
+        <ClickEffect
+          key={ef.id}
+          x={ef.x}
+          y={ef.y}
+          onComplete={() =>
+            setClickEffects((prev) => prev.filter((p) => p.id !== ef.id))
+          }
+        />
+      ))}
+
+      {/* Historia */}
+      {showStory && (
+        <div className="story-screen" onClick={() => { setShowStory(false); setGameStarted(true); }}>
+          <div className="story-crawl">
+            <p>Los Defenders iban rumbo a una misión...</p>
+            <p>Cuando fueron interceptados por los Lombricons.</p>
+            <p>¡Están rodeados!</p>
+            <p>Vos podés ayudarlos.</p>
+            <p>¿Cuántas rondas sobrevivirán?</p>
+            <p>Depende de vos.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Menú principal */}
+      {!gameStarted && !showStory && (
+        <div
+          className="menu-screen"
+          onClick={() => {
+            setShowStory(true);
+          }}
+        >
+          <img src={menuGif} alt="Menu Fondo" className="menu-bg" draggable="false" />
+          <div className="menu-title">The Defenders</div>
+          <div className="menu-instruction">START</div>
+        </div>
+      )}
+
+      {/* Tienda */}
       {inShop && (
         <div className="shop-overlay">
           <div className="shop-box">
@@ -367,8 +387,6 @@ return (
       )}
     </div>
   );
-
-
 }
 
 export default App;
