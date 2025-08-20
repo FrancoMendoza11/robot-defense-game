@@ -10,38 +10,27 @@ import BackgroundMusic from "./BackgroundMusic";
 import './App.css';
 import shootSoundFile from "./assets/sounds/shoot.mp3";
 import { Howl } from "howler";
-import { motion } from "framer-motion";
 
-//  Precargar el sonido y permitir disparos rápidos sin delay
+// Precargar el sonido
 const shootSound = new Howl({
   src: [shootSoundFile],
   volume: 0.6,
-  html5: false,  // usa Web Audio API (más rápido que HTML5 audio)
-  preload: true, // precargar en memoria
+  html5: true, // 
 });
 
-// "Calentar" el buffer apenas arranca el juego para que no haya delay la primera vez
-shootSound.once("load", () => {
-  shootSound.volume(0);
-  const id = shootSound.play();
-  shootSound.stop(id);
-  shootSound.volume(0.6);
-});
 
-// Efecto visual de disparo
+
+// Efecto visual de disparo (solo CSS)
 function ClickEffect({ x, y, onComplete }) {
   return (
-    <motion.div
+    <div
       className="click-effect"
       style={{
         left: x - 16,
         top: y - 16,
         pointerEvents: "none",
       }}
-      initial={{ scale: 0.3, opacity: 1 }}
-      animate={{ scale: 2, opacity: 0 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
-      onAnimationComplete={onComplete}
+      onAnimationEnd={onComplete}
     />
   );
 }
@@ -59,13 +48,11 @@ function App() {
   const [damageMultiplier, setDamageMultiplier] = useState(1);
   const [showStory, setShowStory] = useState(false);
 
-  // 🚀 Defender
   const [defenderUnlocked, setDefenderUnlocked] = useState(false);
   const [defenderDamage, setDefenderDamage] = useState(10);
   const [defenderPosition, setDefenderPosition] = useState({ x: 300, y: 300 });
 
   const [clickEffects, setClickEffects] = useState([]);
-
   const gameAreaRef = useRef(null);
   const nextRobotId = useRef(0);
 
@@ -79,6 +66,7 @@ function App() {
     { id: 7, start: { x: '92%', y: '8%' }, end: { x: '50%', y: '50%' }, rotation: -135 },
     { id: 8, start: { x: '8%', y: '92%' }, end: { x: '50%', y: '50%' }, rotation: 45 }
   ];
+
 
   // Historia
   useEffect(() => {
@@ -174,8 +162,7 @@ function App() {
 
   // Intervalo de spawn
   useEffect(() => {
-    if (!gameStarted || paused || !gameActive) return;
-    if (inShop) return;
+    if (!gameStarted || paused || !gameActive || inShop) return;
     const spawnInterval = setInterval(spawnRobot, 2000);
     return () => clearInterval(spawnInterval);
   }, [gameStarted, paused, inShop, gameActive, round]);
@@ -226,27 +213,33 @@ function App() {
     return () => clearInterval(interval);
   }, [defenderUnlocked, robots, defenderDamage, inShop, paused, gameActive]);
 
-  // 🚀 Disparos con sonido instantáneo + efecto visual
-  useEffect(() => {
-    const gameArea = gameAreaRef.current;
-    if (!gameArea) return;
+const firstClickRef = useRef(false);
 
-    const handleClick = (e) => {
-      shootSound.play();
+useEffect(() => {
+  const gameArea = gameAreaRef.current;
+  if (!gameArea) return;
 
-      const rect = gameArea.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+  const handleClick = (e) => {
+    const rect = gameArea.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-      setClickEffects((prev) => [
-        ...prev,
-        { id: Date.now(), x, y }
-      ]);
-    };
+    // Efecto visual
+    setClickEffects(prev => [...prev, { id: Date.now(), x, y }]);
 
-    gameArea.addEventListener("click", handleClick);
-    return () => gameArea.removeEventListener("click", handleClick);
-  }, []);
+    // Desbloqueo y disparo
+    if (!firstClickRef.current) {
+      shootSound.play(); // primer click desbloquea audio
+      firstClickRef.current = true;
+    } else {
+      shootSound.play(); // disparo normal
+    }
+  };
+
+  gameArea.addEventListener("click", handleClick);
+  return () => gameArea.removeEventListener("click", handleClick);
+}, []);
+
 
   return (
     <div className="game-container" ref={gameAreaRef}>
@@ -254,7 +247,6 @@ function App() {
       <BackgroundMusic play={gameStarted || showStory} />
       <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
 
-      {/* Base */}
       <div className="base">
         <img src={baseImage} alt="Base" className="base-image" draggable="false" />
         <div className="health-bar">
@@ -263,15 +255,9 @@ function App() {
         </div>
       </div>
 
-      {/* Score */}
       <div className="score-display">{score}</div>
+      <div className="round-timer">Ronda: {round} | Tiempo: {timeLeft}s</div>
 
-      {/* Ronda y Timer */}
-      <div className="round-timer">
-        Ronda: {round} | Tiempo: {timeLeft}s
-      </div>
-
-      {/* Defender */}
       {defenderUnlocked && (
         <img
           src={defenderGif}
@@ -282,7 +268,6 @@ function App() {
         />
       )}
 
-      {/* Robots */}
       {robots.map(robot => (
         <Robot
           key={robot.id}
@@ -294,19 +279,15 @@ function App() {
         />
       ))}
 
-      {/* Efectos de disparo */}
-      {clickEffects.map((ef) => (
+      {clickEffects.map(ef => (
         <ClickEffect
           key={ef.id}
           x={ef.x}
           y={ef.y}
-          onComplete={() =>
-            setClickEffects((prev) => prev.filter((p) => p.id !== ef.id))
-          }
+          onComplete={() => setClickEffects(prev => prev.filter(p => p.id !== ef.id))}
         />
       ))}
 
-      {/* Historia */}
       {showStory && (
         <div className="story-screen" onClick={() => { setShowStory(false); setGameStarted(true); }}>
           <div className="story-crawl">
@@ -320,21 +301,14 @@ function App() {
         </div>
       )}
 
-      {/* Menú principal */}
       {!gameStarted && !showStory && (
-        <div
-          className="menu-screen"
-          onClick={() => {
-            setShowStory(true);
-          }}
-        >
+        <div className="menu-screen" onClick={() => setShowStory(true)}>
           <img src={menuGif} alt="Menu Fondo" className="menu-bg" draggable="false" />
           <div className="menu-title">The Defenders</div>
           <div className="menu-instruction">START</div>
         </div>
       )}
 
-      {/* Tienda */}
       {inShop && (
         <div className="shop-overlay">
           <div className="shop-box">
@@ -375,7 +349,6 @@ function App() {
         </div>
       )}
 
-      {/* Menú de pausa */}
       {paused && (
         <div className="menu-screen">
           <div className="menu-title">PAUSA</div>
