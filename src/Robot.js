@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import robotImage from './assets/robot.gif';
+import robot2Image from './assets/robot2.gif';
 
-
-const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused }) => {
+const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused, type = 'normal' }) => {
   const robotRef = useRef(null);
   const movementRef = useRef(null);
   const [stuck, setStuck] = useState(false);
+
   const damageAmount = 20;
+  const imgSrc = type === 'strong' ? robot2Image : robotImage;
+  const robotSize = type === 'strong' ? 180 : 145;  // tamaño un poco más grande
+  const maxHealth = type === 'strong' ? 200 : 100;
 
   // Movimiento GSAP
   useEffect(() => {
@@ -79,54 +83,63 @@ const Robot = ({ id, lane, health, onDamage, onReachBase, gameAreaRef, paused })
     });
   };
 
-  return (
-    <div
-      ref={robotRef}
-      className="robot"
+return (
+  <div
+    ref={robotRef}
+    className="robot"
+    style={{
+      position: 'absolute',
+      width: `${robotSize}px`,
+      height: `${robotSize}px`,
+      transform: 'translate(-50%, -50%)',
+      zIndex: 10,
+      pointerEvents: 'auto',
+      cursor: 'pointer'
+    }}
+    onClick={(e) => {
+      e.stopPropagation();
+      onDamage(id, damageAmount);
+      gsap.to(robotRef.current, {
+        scale: 0.8,
+        duration: 0.1,
+        yoyo: true,
+        repeat: 1
+      });
+    }}
+  >
+    <img
+      src={imgSrc}
+      alt="Robot"
       style={{
-        position: 'absolute',
-        width: '145px',
-        height: '145px',
-        transform: 'translate(-50%, -50%)',
-        zIndex: 10,
-        pointerEvents: 'auto',
-        cursor: 'pointer'
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+        imageRendering: 'pixelated',
+        filter: 'drop-shadow(0 0 8px rgba(0, 255, 0, 0.8))'
       }}
-      onClick={handleClick}
-    >
-      <img
-        src={robotImage}
-        alt="Robot"
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-          imageRendering: 'pixelated',
-          filter: 'drop-shadow(0 0 8px rgba(0, 255, 0, 0.8))'
-        }}
-    draggable="false"
-
-      />
-      {/* Barra de salud */}
+      draggable="false"
+    />
+    {/* Barra de salud */}
+    <div style={{
+      position: 'absolute',
+      bottom: '-15px',
+      left: '10%',
+      width: '80%',
+      height: '6px',
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      borderRadius: '4px',
+      overflow: 'hidden'
+    }}>
       <div style={{
-        position: 'absolute',
-        bottom: '-15px',
-        left: '10%',
-        width: '80%',
-        height: '6px',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        borderRadius: '4px',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          width: `${health}%`,
-          height: '100%',
-          backgroundColor: health > 50 ? '#00FF00' : '#FF0000',
-          transition: 'width 0.2s ease-out'
-        }} />
-      </div>
+        width: `${(health / maxHealth) * 100}%`,
+        height: '100%',
+        backgroundColor: health > maxHealth/2 ? '#00FF00' : '#FF0000',
+        transition: 'width 0.2s ease-out'
+      }} />
     </div>
-  );
+  </div>
+);
+
 };
 
 export default Robot;

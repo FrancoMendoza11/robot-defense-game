@@ -91,35 +91,46 @@ function App() {
   }, [gameStarted, inShop]);
 
   // Spawn robots
-  const spawnRobot = () => {
-    if (!gameActive || !gameStarted || inShop || paused || !gameAreaRef.current) return;
-    const lane = lanes[Math.floor(Math.random() * lanes.length)];
-    const newRobot = {
-      id: nextRobotId.current++,
-      lane,
-      health: round >= 10 ? 200 : 100,
-      speed: (round >= 10 ? 0.9 : 0.5) + Math.random() * 0.4,
-      x: lane.start.x.includes('%') ? (parseFloat(lane.start.x) / 100) * window.innerWidth : parseFloat(lane.start.x),
-      y: lane.start.y.includes('%') ? (parseFloat(lane.start.y) / 100) * window.innerHeight : parseFloat(lane.start.y)
-    };
-    setRobots(prev => [...prev, newRobot]);
+const spawnRobot = () => {
+  if (!gameActive || !gameStarted || inShop || paused || !gameAreaRef.current) return;
+  const lane = lanes[Math.floor(Math.random() * lanes.length)];
+
+  let type = 'normal';
+  let healthValue = 100;
+  if (round >= 3 && Math.random() < 0.4) { // 40% de chance de robot fuerte
+    type = 'strong';
+    healthValue = 200;
+  }
+
+  const newRobot = {
+    id: nextRobotId.current++,
+    lane,
+    type, // nuevo campo
+    health: healthValue,
+    speed: type === 'strong' ? 0.3 + Math.random() * 0.3 : 0.5 + Math.random() * 0.4,
+    x: lane.start.x.includes('%') ? (parseFloat(lane.start.x) / 100) * window.innerWidth : parseFloat(lane.start.x),
+    y: lane.start.y.includes('%') ? (parseFloat(lane.start.y) / 100) * window.innerHeight : parseFloat(lane.start.y)
   };
+  setRobots(prev => [...prev, newRobot]);
+};
+
 
   // Daño
-  const handleDamage = (id, damage) => {
-    const totalDamage = damage * damageMultiplier;
-    setRobots(prev => prev.map(robot => {
-      if (robot.id === id) {
-        const newHealth = robot.health - totalDamage;
-        if (newHealth <= 0) {
-          setTimeout(() => setRobots(prev => prev.filter(r => r.id !== id)), 100);
-          setScore(prev => prev + 1);
-        }
-        return { ...robot, health: newHealth };
+const handleDamage = (id, damage) => {
+  const totalDamage = damage * damageMultiplier;
+  setRobots(prev => prev.map(robot => {
+    if (robot.id === id) {
+      const newHealth = robot.health - totalDamage;
+      if (newHealth <= 0) {
+        setTimeout(() => setRobots(prev => prev.filter(r => r.id !== id)), 100);
+        // Asignar puntos según tipo de robot
+        setScore(prev => prev + (robot.type === 'strong' ? 5 : 1));
       }
-      return robot;
-    }));
-  };
+      return { ...robot, health: newHealth };
+    }
+    return robot;
+  }));
+};
 
   // Base alcanzada
   const handleReachBase = (id) => {
@@ -268,16 +279,16 @@ useEffect(() => {
         />
       )}
 
-      {robots.map(robot => (
-        <Robot
-          key={robot.id}
-          {...robot}
-          onDamage={handleDamage}
-          onReachBase={handleReachBase}
-          gameAreaRef={gameAreaRef}
-          paused={paused || inShop}
-        />
-      ))}
+	{robots.map(robot => (
+	  <Robot
+	    key={robot.id}
+	    {...robot} // incluye type
+	    onDamage={handleDamage}
+	    onReachBase={handleReachBase}
+	    gameAreaRef={gameAreaRef}
+	    paused={paused || inShop}
+	  />
+	))}
 
       {clickEffects.map(ef => (
         <ClickEffect
@@ -314,13 +325,13 @@ useEffect(() => {
           <div className="shop-box">
             <h2 className="shop-title">TIENDA DE PUNTOS</h2>
             <div className="shop-grid">
-              <div className="shop-item" onClick={() => buyItem(5, () => setHealth(prev => Math.min(prev + 20, 100)))}>
+              <div className="shop-item" onClick={() => buyItem(10, () => setHealth(prev => Math.min(prev + 20, 100)))}>
                 <p className="item-name">+VIDA</p>
-                <p className="item-cost">5 pts</p>
+                <p className="item-cost">10 pts</p>
               </div>
-              <div className="shop-item" onClick={() => buyItem(7, () => setDamageMultiplier(prev => prev + 0.2))}>
+              <div className="shop-item" onClick={() => buyItem(10, () => setDamageMultiplier(prev => prev + 0.2))}>
                 <p className="item-name">+DAÑO</p>
-                <p className="item-cost">7 pts</p>
+                <p className="item-cost">10 pts</p>
               </div>
               {!defenderUnlocked ? (
                 <div className="shop-item" onClick={() => buyItem(100, () => setDefenderUnlocked(true))}>
