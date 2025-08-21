@@ -252,125 +252,135 @@ useEffect(() => {
 }, []);
 
 
-  return (
-    <div className="game-container" ref={gameAreaRef}>
-      <SpaceBackground />
-      <BackgroundMusic play={gameStarted || showStory} />
-      <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
+return (
+  <div className="game-container" ref={gameAreaRef}>
+    <SpaceBackground />
+    <BackgroundMusic play={gameStarted || showStory} />
+    <TargetCursor spinDuration={1.5} hideDefaultCursor={true} targetSelector=".robot" />
 
-      <div className="base">
-        <img src={baseImage} alt="Base" className="base-image" draggable="false" />
-        <div className="health-bar">
-          <div className="health-fill" style={{ width: `${health}%` }} />
-          <span className="health-text">{health}%</span>
+    {/* Base */}
+    <div className="base">
+      <img src={baseImage} alt="Base" className="base-image" draggable="false" />
+      <div className="health-bar">
+        <div className="health-fill" style={{ width: `${health}%` }} />
+        <span className="health-text">{health}%</span>
+      </div>
+    </div>
+
+    {/* Score and round */}
+    <div className="score-display">Score: {score}</div>
+    <div className="round-timer">Round: {round} | Time: {timeLeft}s</div>
+
+    {/* Defender */}
+    {defenderUnlocked && (
+      <img
+        src={defenderGif}
+        alt="Defender"
+        className="defender"
+        style={{ left: defenderPosition.x, top: defenderPosition.y }}
+        draggable="false"
+      />
+    )}
+
+    {/* Robots */}
+    {robots.map(robot => (
+      <Robot
+        key={robot.id}
+        {...robot}
+        onDamage={handleDamage}
+        onReachBase={handleReachBase}
+        gameAreaRef={gameAreaRef}
+        paused={paused || inShop}
+      />
+    ))}
+
+    {/* Click effects */}
+    {clickEffects.map(ef => (
+      <ClickEffect
+        key={ef.id}
+        x={ef.x}
+        y={ef.y}
+        onComplete={() => setClickEffects(prev => prev.filter(p => p.id !== ef.id))}
+      />
+    ))}
+
+    {/* Story screen */}
+    {showStory && (
+      <div className="story-screen" onClick={() => { setShowStory(false); setGameStarted(true); }}>
+        <div className="story-crawl">
+          <p>The Defenders were heading on a mission...</p>
+          <p>When they were intercepted by intergalactic enemies.</p>
+          <p>They are surrounded!</p>
+          <p>You can help them.</p>
+          <p>How many rounds will they survive?</p>
+          <p>That depends on you.</p>
         </div>
       </div>
+    )}
 
-      <div className="score-display">{score}</div>
-      <div className="round-timer">Ronda: {round} | Tiempo: {timeLeft}s</div>
+    {/* Menu screen */}
+    {!gameStarted && !showStory && (
+      <div className="menu-screen" onClick={() => setShowStory(true)}>
+        <img src={menuGif} alt="Menu Background" className="menu-bg" draggable="false" />
+        <div className="menu-title">Defend the Rogueship</div>
+        <div className="menu-instruction">START</div>
+      </div>
+    )}
 
-      {defenderUnlocked && (
-        <img
-          src={defenderGif}
-          alt="Defender"
-          className="defender"
-          style={{ left: defenderPosition.x, top: defenderPosition.y }}
-          draggable="false"
-        />
-      )}
-
-	{robots.map(robot => (
-	  <Robot
-	    key={robot.id}
-	    {...robot} // incluye type
-	    onDamage={handleDamage}
-	    onReachBase={handleReachBase}
-	    gameAreaRef={gameAreaRef}
-	    paused={paused || inShop}
-	  />
-	))}
-
-      {clickEffects.map(ef => (
-        <ClickEffect
-          key={ef.id}
-          x={ef.x}
-          y={ef.y}
-          onComplete={() => setClickEffects(prev => prev.filter(p => p.id !== ef.id))}
-        />
-      ))}
-
-      {showStory && (
-        <div className="story-screen" onClick={() => { setShowStory(false); setGameStarted(true); }}>
-          <div className="story-crawl">
-            <p>Los Defenders iban rumbo a una misión...</p>
-            <p>Cuando fueron interceptados por los Lombricons.</p>
-            <p>¡Están rodeados!</p>
-            <p>Vos podés ayudarlos.</p>
-            <p>¿Cuántas rondas sobrevivirán?</p>
-            <p>Depende de vos.</p>
-          </div>
-        </div>
-      )}
-
-      {!gameStarted && !showStory && (
-        <div className="menu-screen" onClick={() => setShowStory(true)}>
-          <img src={menuGif} alt="Menu Fondo" className="menu-bg" draggable="false" />
-          <div className="menu-title">The Defenders</div>
-          <div className="menu-instruction">START</div>
-        </div>
-      )}
-
-      {inShop && (
-        <div className="shop-overlay">
-          <div className="shop-box">
-            <h2 className="shop-title">TIENDA DE PUNTOS</h2>
-            <div className="shop-grid">
-              <div className="shop-item" onClick={() => buyItem(10, () => setHealth(prev => Math.min(prev + 20, 100)))}>
-                <p className="item-name">+VIDA</p>
-                <p className="item-cost">10 pts</p>
-              </div>
-              <div className="shop-item" onClick={() => buyItem(10, () => setDamageMultiplier(prev => prev + 0.2))}>
-                <p className="item-name">+DAÑO</p>
-                <p className="item-cost">10 pts</p>
-              </div>
-              {!defenderUnlocked ? (
-                <div className="shop-item" onClick={() => buyItem(100, () => setDefenderUnlocked(true))}>
-                  <p className="item-name">ROBOT DEFENDER</p>
-                  <p className="item-cost">100 pts</p>
-                </div>
-              ) : (
-                <div className="shop-item" onClick={() => buyItem(50, () => setDefenderDamage(prev => prev + 10))}>
-                  <p className="item-name">Mejorar DEFENDER</p>
-                  <p className="item-cost">50 pts</p>
-                </div>
-              )}
+    {/* Shop */}
+    {inShop && (
+      <div className="shop-overlay">
+        <div className="shop-box">
+          <h2 className="shop-title">POINT SHOP</h2>
+          <div className="shop-grid">
+            <div className="shop-item" onClick={() => buyItem(10, () => setHealth(prev => Math.min(prev + 20, 100)))}>
+              <p className="item-name">+HEALTH</p>
+              <p className="item-cost">10 pts</p>
             </div>
-            <p className="shop-score">Puntos: {score}</p>
-            <button
-              className="shop-continue"
-              onClick={() => {
-                setInShop(false);
-                setRound(prev => prev + 1);
-                setTimeLeft(45);
-              }}
-            >
-              CONTINUAR
-            </button>
+            <div className="shop-item" onClick={() => buyItem(10, () => setDamageMultiplier(prev => prev + 0.2))}>
+              <p className="item-name">+DAMAGE</p>
+              <p className="item-cost">10 pts</p>
+            </div>
+            {!defenderUnlocked ? (
+              <div className="shop-item" onClick={() => buyItem(100, () => setDefenderUnlocked(true))}>
+                <p className="item-name">ROBOT DEFENDER</p>
+                <p className="item-cost">100 pts</p>
+              </div>
+            ) : (
+              <div className="shop-item" onClick={() => buyItem(50, () => setDefenderDamage(prev => prev + 10))}>
+                <p className="item-name">UPGRADE DEFENDER</p>
+                <p className="item-cost">50 pts</p>
+              </div>
+            )}
           </div>
+          <p className="shop-score">Points: {score}</p>
+          <button
+            className="shop-continue"
+            onClick={() => {
+              setInShop(false);
+              setRound(prev => prev + 1);
+              setTimeLeft(45);
+            }}
+          >
+            CONTINUE
+          </button>
         </div>
-      )}
+      </div>
+    )}
 
-      {paused && (
-        <div className="menu-screen">
-          <div className="menu-title">PAUSA</div>
-          <div className="shop-container">
-            <div className="shop-item" onClick={() => setPaused(false)}>REANUDAR</div>
-            <div className="shop-item" onClick={() => { setPaused(false); setGameStarted(false); setGameActive(false); }}>SALIR</div>
-          </div>
+    {/* Pause screen */}
+    {paused && (
+      <div className="menu-screen">
+        <div className="menu-title">PAUSED</div>
+        <div className="shop-container">
+          <div className="shop-item" onClick={() => setPaused(false)}>RESUME</div>
+          <div className="shop-item" onClick={() => { setPaused(false); setGameStarted(false); setGameActive(false); }}>EXIT</div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
+
 }
 
 export default App;
