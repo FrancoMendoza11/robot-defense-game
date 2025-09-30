@@ -1,93 +1,146 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+:root{
+  --neon-green: #00FF00;
+  --neon-cyan: #00FFFF;
+  --neon-yellow: #FFFF00;
+  --neon-red: #FF3333;
+  --bg-black: #000;
+  --glass: rgba(255,255,255,0.03);
+  --crt-opacity: 0.03;
+  --z-hud: 9999;
+}
+
+/* ========== GLOBAL / BASE ========== */
+* { box-sizing: border-box; }
+html,body,#root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg-black);
+  font-family: 'Press Start 2P', monospace, system-ui, -apple-system, "Segoe UI", Roboto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--neon-green);
+}
+
 .game-container, 
 .game-container * {
   cursor: none !important;
   user-select: none;
+  -webkit-user-select: none;
 }
 
-.robot img,
-.shop-item img,
-.base-image {
-  user-select: none;
-  -webkit-user-drag: none;
-  -khtml-user-drag: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-drag: none;
-}
-
-
-
-/* Contenedor del juego */
+/* Contenedor principal */
 .game-container {
   position: relative;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
   background-color: #000;
-  cursor: none;
   perspective: 800px;
 }
 
-/* Estrellas */
+/* Efecto CRT / scanlines + vignette */
+.game-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 0, var(--crt-opacity)),
+    rgba(0, 255, 0, var(--crt-opacity)) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+  pointer-events: none;
+  z-index: 9997;
+  animation: scanlineMove 0.5s linear infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes scanlineMove {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+.game-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 60%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: multiply;
+}
+
+/* ========== SPACE ELEMENTS ========== */
+.space-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
 .star {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 2px;
-  height: 2px;
   background: white;
   border-radius: 50%;
-  transform: translate3d(0,0,0);
-  animation: starMove linear infinite;
+  box-shadow: 0 0 6px white;
+  will-change: transform, opacity;
 }
 
-@keyframes starMove {
-  0% { transform: translate3d(var(--x), var(--y), 0) scale(0.5); opacity: 0.8; }
-  100% { transform: translate3d(calc(var(--x) * 3), calc(var(--y) * 3), 1000px) scale(2); opacity: 0; }
-}
-
-/* Planetas */
-.planet {
-  position: absolute;
-  border-radius: 50%;
-  background-size: cover;
-  animation: planetMove linear infinite;
-}
-
-@keyframes planetMove {
-  0% { transform: translate3d(var(--px), var(--py), 0) scale(var(--ps)); opacity: 0.9; }
-  100% { transform: translate3d(calc(var(--px)), calc(var(--py) + 2000px), 0) scale(var(--ps)); opacity: 0.9; }
-}
-
-/* Asteroides */
 .asteroid {
   position: absolute;
-  width: var(--aw, 40px);
-  height: var(--ah, 40px);
   background-size: cover;
-  border-radius: 50%;
-  animation: asteroidMove linear infinite;
+  background-repeat: no-repeat;
+  border-radius: 10%;
+  opacity: 0.85;
+  will-change: transform;
 }
 
-@keyframes asteroidMove {
-  0% { transform: translate3d(var(--ax), var(--ay), 0) rotate(0deg); }
-  100% { transform: translate3d(calc(var(--ax) + 500px), calc(var(--ay) + 2000px), 0) rotate(360deg); }
+/* ========== BASE / ROBOT / HUD ========== */
+.base {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 210px;
+  height: 210px;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
 }
 
+.base-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
 
+/* Health bar */
 .health-bar {
   position: absolute;
-  bottom: -15px;
+  bottom: -18px;
   width: 200px;
   height: 20px;
-  background-color: rgba(0,0,0,0.7);
-  border-radius: 10px;
+  background-color: rgba(0,0,0,0.6);
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2px solid rgba(0,0,0,0.4);
 }
 
 .health-fill {
@@ -95,9 +148,10 @@
   height: 100%;
   left: 0;
   top: 0;
-  background-color: #00FF00;
-  transition: width 0.2s ease-out;
+  background: linear-gradient(90deg, #00ff00 0%, #00cc66 100%);
+  transition: width 0.25s ease-out;
   z-index: 1;
+  box-shadow: 0 0 8px rgba(0,255,0,0.6);
 }
 
 .health-text {
@@ -106,18 +160,19 @@
   font-family: 'Press Start 2P', monospace;
   font-size: 12px;
   color: #FFFFFF;
-  text-shadow: 0 0 2px black, 0 0 3px #00FF00;
+  text-shadow: 0 0 2px black, 0 0 3px var(--neon-green);
 }
 
+/* Score & Timer */
 .score-display {
   position: absolute;
-  top: 10px;     
-  left: 150px;    
+  top: 12px;
+  left: 150px;
   transform: none;
-  color: #00FF00;
+  color: var(--neon-green);
   font-family: 'Press Start 2P', monospace;
   font-size: 14px;
-  text-shadow: 0 0 2px black, 0 0 3px #00FF00, 0 0 5px #00FF00;
+  text-shadow: 0 0 2px black, 0 0 3px var(--neon-green), 0 0 5px var(--neon-green);
   z-index: 20;
   pointer-events: none;
   animation: pulse 1s infinite alternate;
@@ -125,112 +180,174 @@
 
 .round-timer {
   position: absolute;
-  top: 10px;
+  top: 12px;
   right: 20px;
-  color: #00FF00;
+  color: var(--neon-green);
   font-family: 'Press Start 2P', monospace;
   font-size: 14px;
-  text-shadow: 0 0 2px black, 0 0 3px #00FF00;
+  text-shadow: 0 0 2px black, 0 0 3px var(--neon-green);
   z-index: 20;
 }
 
 @keyframes pulse {
   0% { transform: translateX(-50%) scale(1); }
-  50% { transform: translateX(-50%) scale(1.2); }
+  50% { transform: translateX(-50%) scale(1.12); }
   100% { transform: translateX(-50%) scale(1); }
 }
 
-.game-over {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  text-align: center;
-  font-family: Arial, sans-serif;
-  z-index: 30;
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: 30px;
-  border-radius: 10px;
-}
-
-.game-over button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  font-size: 18px;
-  background-color: #ff5555;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.game-over button:hover {
-  background-color: #ff3333;
-}
-
-.lane-marker {
-  position: absolute;
-  pointer-events: none;
-  z-index: 3;
-  opacity: 0.95;
-  transform-origin: center center;
-  transition: transform 0.3s ease-in-out;
-  animation: idleShip 1.5s infinite alternate;
-}
-
-@keyframes idleShip {
-  0% { transform: translate(-50%, -50%) scale(1) rotate(var(--rotation)); }
-  100% { transform: translate(-50%, -50%) scale(1.05) rotate(var(--rotation)); }
-}
-
-.robot {
-  position: absolute;
-  left: 0;
-  top: 0;
-  will-change: transform;
-}
-
+/* Robot bobbing */
 .robot img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
+  animation: bob 1s infinite alternate;
+  will-change: transform, filter;
 }
 
+@keyframes bob {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(-2deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* robot damaged */
 .robot.damage {
   animation: robotHit 0.2s forwards;
 }
-
 @keyframes robotHit {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.8); }
-  100% { transform: scale(1); }
+  0% { transform: scale(1); filter: saturate(1); }
+  50% { transform: scale(0.85); filter: saturate(0.1) hue-rotate(20deg); }
+  100% { transform: scale(1); filter: none; }
 }
 
-.base {
+/* Defender */
+.defender {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  will-change: left, top;
+}
+
+/* ========== TARGET CURSOR ========== */
+/* (TargetCursor.css contents earlier should remain as separate import) */
+
+/* ========== CLICK / HIT EFFECTS ========== */
+.click-effect {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,255,255,0.95) 0%, transparent 60%);
+  opacity: 0.9;
+  pointer-events: none;
+  animation: blasterFlash 0.3s ease-out forwards;
+  box-shadow: 0 0 20px rgba(0,255,255,0.8);
+  z-index: 200;
+  transform-origin: center center;
+}
+
+.click-effect.critical {
+  background: radial-gradient(circle, #FF3333 0%, #FFFF66 60%);
+  animation: criticalFlash 0.4s ease-out forwards;
+  box-shadow: 0 0 40px #FF3333, 0 0 60px #FFFF66;
+}
+
+@keyframes blasterFlash {
+  0% {
+    transform: scale(0.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes criticalFlash {
+  0% {
+    transform: scale(0.5) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Floating damage / score pop */
+.float-pop {
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: 210px;      
-  height: 210px;    
-  transform: translate(-50%, -50%);
-  z-index: 5;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 6px var(--neon-yellow);
+  animation: floatUp 0.8s ease-out forwards;
+}
+@keyframes floatUp {
+  0% {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) translateY(-50px) scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* ========== COMBO SYSTEM ========== */
+.combo-display {
+  position: fixed;
+  top: 56px;
+  left: 150px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  color: var(--neon-yellow);
+  text-shadow:
+    0 0 10px var(--neon-yellow),
+    0 0 20px var(--neon-yellow),
+    0 0 30px #FF6600;
+  animation: comboShake 0.45s infinite;
+  z-index: var(--z-hud);
+}
+@keyframes comboShake {
+  0%, 100% { transform: translateX(0) scale(1); }
+  25% { transform: translateX(-3px) scale(1.04); }
+  75% { transform: translateX(3px) scale(1.04); }
+}
+
+/* ========== POWER-UP INDICATORS ========== */
+.active-powerups {
+  position: fixed;
+  top: 80px;
+  right: 20px;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: transparent;
-  border: none;
+  flex-direction: column;
+  gap: 10px;
+  z-index: var(--z-hud);
 }
 
-.base-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
+.powerup-indicator {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid;
+  border-radius: 8px;
+  text-shadow: 0 0 8px currentColor;
+  animation: powerupPulse 1.2s infinite;
+  display: inline-block;
+}
+@keyframes powerupPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.92; }
 }
 
+/* ========== MENU & STORY ========== */
 .menu-screen {
   position: absolute;
   top: 0;
@@ -244,6 +361,7 @@
   align-items: center;
   cursor: pointer;
   pointer-events: auto;
+  animation: tvOn 0.5s ease-out;
 }
 
 .menu-bg {
@@ -259,111 +377,33 @@
 .menu-title {
   font-family: 'Press Start 2P', monospace;
   font-size: 48px;
-  color: #00FF00;
-  text-shadow: 0 0 2px black, 0 0 5px #00FF00, 0 0 10px #00FF00;
+  color: var(--neon-green);
+  text-shadow: 0 0 2px black, 0 0 8px var(--neon-green), 0 0 14px var(--neon-green);
   margin-top: 140px;
 }
 
 .menu-instruction {
   font-family: 'Press Start 2P', monospace;
   font-size: 25px;
-  color: #00FF00;
-  margin-top: 550px;
+  color: var(--neon-green);
+  margin-top: 520px;
   text-shadow: 0 0 2px black, 0 0 5px white;
 }
 
-/* Fondo que oscurece el juego */
-.shop-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 999;
+@keyframes tvOn {
+  0% { transform: scaleY(0); opacity: 0; }
+  50% { transform: scaleY(1.2); opacity: 0.6; }
+  100% { transform: scaleY(1); opacity: 1; }
 }
 
-/* Caja principal verde */
-.shop-box {
-  width: 500px;
-  height: 500px;
-  background: #1a7f1a; /* verde oscuro */
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 0 20px rgba(0,0,0,0.8);
-}
-
-/* Título */
-.shop-title {
-  color: white;
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-
-/* Grid de items */
-.shop-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  flex-grow: 1;
-  align-items: center;
-  justify-items: center;
-  width: 100%;
-}
-
-/* Cada item cuadrado */
-.shop-item {
-  width: 160px;
-  height: 160px;
-  background: white;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s;
-  text-align: center;
-}
-
-.shop-item:hover {
-  transform: scale(1.05);
-  background: #f0f0f0;
-}
-
-
-.item-name {
-  font-weight: bold;
-  color: #00FF00; 
-  text-shadow: 0 0 2px black, 0 0 4px #00FF00;
-}
-
-.item-cost {
-  color: #00FF00; 
-  font-size: 14px;
-  margin-top: 5px;
-  text-shadow: 0 0 2px black, 0 0 4px #00FF00;
-}
-
-/* Puntos del jugador */
-.shop-score {
-  color: white;
-  font-size: 18px;
-  margin-top: 10px;
-}
-
-
+/* Story crawl */
 .story-screen {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: black url('./assets/fondo.gif');
+  background: black url('./assets/fondo.gif') center/cover no-repeat;
   overflow: hidden;
   display: flex;
   justify-content: center;
@@ -375,29 +415,19 @@
 .story-crawl {
   font-family: 'Press Start 2P', monospace;
   font-size: 18px;
-  color: #00FF00;
+  color: var(--neon-green);
   text-align: center;
   width: 80%;
   line-height: 2;
   transform-origin: bottom center;
   animation: crawl 25s linear forwards;
 }
-
 @keyframes crawl {
   0% { transform: rotateX(25deg) translateY(100%); }
   100% { transform: rotateX(25deg) translateY(-300%); }
 }
 
-.defender {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 3;
-}
-
-/* Fondo que oscurece el juego */
+/* ========== SHOP / UI ========== */
 .shop-overlay {
   position: fixed;
   inset: 0;
@@ -406,61 +436,64 @@
   justify-content: center;
   background: rgba(0, 0, 0, 0.85);
   z-index: 999;
+  animation: fadeIn 0.25s ease-out;
 }
 
-/* Caja principal con efecto retro */
+@keyframes fadeIn {
+  0% { opacity: 0; transform: scale(0.98); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 .shop-box {
-  width: 550px;
-  height: 550px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 3px solid #00FF00;
+  width: 560px;
+  max-width: calc(100% - 40px);
+  height: 560px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.7));
+  border: 3px solid var(--neon-green);
   border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 0 20px #00FF00, inset 0 0 15px #00FF00;
+  box-shadow: 0 0 40px var(--neon-green), inset 0 0 20px rgba(0,255,0,0.06);
   position: relative;
   overflow: hidden;
 }
 
-/* Efecto de rayos verdes animados */
 .shop-box::before {
   content: "";
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 255, 0, 0.1),
-    rgba(0, 255, 0, 0.1) 2px,
+    rgba(0, 255, 0, 0.04),
+    rgba(0, 255, 0, 0.04) 2px,
     transparent 3px,
     transparent 6px
   );
   animation: scanlines 4s linear infinite;
   pointer-events: none;
+  z-index: 1;
 }
-
 @keyframes scanlines {
   0% { transform: translateY(0); }
   100% { transform: translateY(10%); }
 }
 
-/* Título */
 .shop-title {
   font-family: 'Press Start 2P', monospace;
-  color: #00FF00;
+  color: var(--neon-green);
   font-size: 22px;
-  text-shadow: 0 0 5px #00FF00, 0 0 10px black;
-  margin-bottom: 20px;
+  text-shadow: 0 0 8px var(--neon-green);
+  margin-bottom: 6px;
   z-index: 2;
 }
 
-/* Grid de items */
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  gap: 18px;
   flex-grow: 1;
   align-items: center;
   justify-items: center;
@@ -468,284 +501,204 @@
   z-index: 2;
 }
 
-/* Cada item cuadrado */
 .shop-item {
   width: 180px;
   height: 180px;
-  background: black;
-  border: 3px solid #00FF00;
-  border-radius: 10px;
+  background: rgba(0,0,0,0.65);
+  border: 3px solid var(--neon-green);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-family: 'Press Start 2P', monospace;
-  color: #00FF00;
-  text-shadow: 0 0 5px #00FF00;
+  color: var(--neon-green);
+  text-shadow: 0 0 6px var(--neon-green);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.shop-item:hover {
-  transform: scale(1.08);
-  box-shadow: 0 0 15px #00FF00;
-  background: rgba(0, 255, 0, 0.1);
-}
-
-/* Nombre y costo */
-.item-name {
-  font-size: 12px;
-  margin-bottom: 10px;
-}
-
-.item-cost {
-  font-size: 10px;
-  opacity: 0.8;
-}
-
-/* Puntos del jugador */
-.shop-score {
-  font-family: 'Press Start 2P', monospace;
-  color: #00FF00;
-  font-size: 14px;
-  margin-top: 10px;
-  text-shadow: 0 0 5px #00FF00;
+  transition: transform 0.16s, box-shadow 0.16s, background 0.16s;
   z-index: 2;
 }
 
+.shop-item:hover {
+  transform: scale(1.07);
+  box-shadow: 0 0 24px var(--neon-green);
+  background: rgba(0,255,0,0.03);
+}
+
+.shop-item-special {
+  background: linear-gradient(45deg, rgba(32,0,32,0.6), rgba(8,0,8,0.6));
+  border-color: #FF00FF;
+  animation: specialPulse 2s infinite;
+}
+@keyframes specialPulse {
+  0%, 100% { 
+    box-shadow: 0 0 20px #FF00FF;
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 40px #FF00FF, 0 0 60px #FF00FF;
+    transform: scale(1.03);
+  }
+}
+
+.item-name { font-size: 12px; margin-bottom: 6px; color: var(--neon-green); }
+.item-cost { font-size: 10px; opacity: 0.9; color: var(--neon-yellow); }
+.item-desc { font-size: 9px; color: #AAAAAA; margin-top: 6px; }
+
+/* shop controls */
+.shop-score { font-family: 'Press Start 2P'; color: white; font-size: 14px; z-index: 2; }
+.shop-round { color: var(--neon-yellow); font-size: 12px; margin: 6px 0; z-index: 2; text-shadow: 0 0 8px var(--neon-yellow); }
+
 .shop-continue {
-  margin-top: 15px;
-  padding: 10px 20px;
+  margin-top: 12px;
+  padding: 12px 22px;
   font-family: 'Press Start 2P', monospace;
   font-size: 14px;
-  color: #00FF00;
-  background: black;
-  border: 3px solid #00FF00;
+  color: var(--neon-green);
+  background: rgba(0,0,0,0.6);
+  border: 3px solid var(--neon-green);
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 0 10px #00FF00;
-  transition: transform 0.2s, background 0.2s;
+  box-shadow: 0 0 16px var(--neon-green);
+  z-index: 2;
 }
+.shop-continue:hover { transform: scale(1.05); background: rgba(0,255,0,0.06); }
 
-.shop-continue:hover {
-  transform: scale(1.05);
-  background: rgba(0, 255, 0, 0.2);
-}
-
+/* ========== PAUSE SCREEN ========== */
 .pause-menu {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.9);
+  inset: 0;
+  background: rgba(0,0,0,0.9);
   z-index: 1000;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-family: 'Press Start 2P', monospace;
-  color: #00FF00;
-  text-shadow: 0 0 5px #00FF00, 0 0 10px black;
-  border: 3px solid #00FF00;
-  box-shadow: inset 0 0 20px #00FF00;
+  color: var(--neon-green);
+  text-shadow: 0 0 6px var(--neon-green);
+  border: 3px solid var(--neon-green);
+  box-shadow: inset 0 0 30px var(--neon-green);
 }
-
-.pause-title {
-  font-size: 28px;
-  margin-bottom: 40px;
-}
-
 .pause-button {
-  padding: 15px 25px;
-  margin: 15px;
+  padding: 10px 20px;
+  margin: 10px;
   font-size: 12px;
-  border: 3px solid #00FF00;
-  background: black;
-  color: #00FF00;
+  border: 3px solid var(--neon-green);
+  background: rgba(0,0,0,0.7);
+  color: var(--neon-green);
   cursor: pointer;
-  transition: transform 0.2s, background 0.2s;
-  box-shadow: 0 0 10px #00FF00;
+  border-radius: 8px;
 }
+.pause-button:hover { transform: scale(1.05); background: rgba(0,255,0,0.06); }
 
-.pause-button:hover {
-  transform: scale(1.1);
-  background: rgba(0, 255, 0, 0.2);
-}
-
-.defender {
-  position: absolute;
-  width: 200px;   
-  height: 200px;  
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 5;
-}
-
-
-.robot img {
-  animation: bob 1s infinite alternate;
-}
-
-@keyframes bob {
-  0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-5px) rotate(-2deg); }
-  100% { transform: translateY(0) rotate(0deg); }
-}
-
-.shop-item {
-  animation: neonPulse 2s infinite alternate;
-}
-
-@keyframes neonPulse {
-  0% { box-shadow: 0 0 5px #00FF00; }
-  50% { box-shadow: 0 0 15px #0f0, 0 0 25px #00FF00; }
-  100% { box-shadow: 0 0 5px #00FF00; }
-}
-
-.game-container::after {
-  content: "";
-  position: absolute;
+/* ========== GAME OVER ========== */
+.game-over-screen {
+  position: fixed;
   inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0,255,0,0.05),
-    rgba(0,255,0,0.05) 2px,
-    transparent 6px,
-    transparent 7px
-  );
-  pointer-events: none;
-  animation: scanlineMove 0.5s linear infinite;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.5s ease-out;
 }
 
-@keyframes scanlineMove {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(4px); }
+.game-over-box {
+  background: black;
+  border: 5px solid var(--neon-red);
+  border-radius: 18px;
+  padding: 36px;
+  text-align: center;
+  box-shadow:
+    0 0 30px var(--neon-red),
+    0 0 60px var(--neon-red),
+    inset 0 0 30px rgba(255,0,0,0.12);
+  animation: glitchBorder 0.9s infinite;
 }
 
-
-.shop-overlay, .menu-screen {
-  animation: tvOn 0.5s ease-out;
+.game-over-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 36px;
+  color: var(--neon-red);
+  text-shadow:
+    0 0 10px var(--neon-red),
+    0 0 20px var(--neon-red);
+  margin-bottom: 18px;
+  animation: textGlitch 2s infinite;
 }
 
-@keyframes tvOn {
-  0% { transform: scaleY(0); opacity: 0; }
-  50% { transform: scaleY(1.2); opacity: 0.7; }
-  100% { transform: scaleY(1); opacity: 1; }
+.game-over-stats {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: var(--neon-green);
+  text-shadow: 0 0 10px var(--neon-green);
+  margin: 8px 0;
 }
 
-
-.robot img,
-.base-image {
-  animation: glowPulse 1.2s infinite alternate;
+.game-over-button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  background: black;
+  color: var(--neon-green);
+  border: 3px solid var(--neon-green);
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 20px var(--neon-green);
+  transition: all 0.25s;
+}
+.game-over-button:hover {
+  background: var(--neon-green);
+  color: black;
+  transform: scale(1.08);
+  box-shadow: 0 0 40px var(--neon-green);
 }
 
-@keyframes glowPulse {
-  0% { filter: drop-shadow(0 0 2px #0f0); }
-  50% { filter: drop-shadow(0 0 6px #0f0); }
-  100% { filter: drop-shadow(0 0 2px #0f0); }
+@keyframes textGlitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px,2px); text-shadow: 0 0 10px var(--neon-red); }
+  40% { transform: translate(2px,-2px); text-shadow: 0 0 20px var(--neon-cyan); }
+  60% { transform: translate(-2px,-2px); text-shadow: 0 0 10px var(--neon-red); }
+  80% { transform: translate(2px,2px); text-shadow: 0 0 20px var(--neon-yellow); }
 }
 
-
-.space-background {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  top: 0;
-  left: 0;
-  z-index: 0;
+@keyframes glitchBorder {
+  0%, 100% { border-color: var(--neon-red); }
+  33% { border-color: var(--neon-cyan); }
+  66% { border-color: var(--neon-yellow); }
 }
 
-.star {
-  position: absolute;
-  background: white;
-  border-radius: 50%;
-}
+/* ========== MISC / TRANSITIONS ========== */
+.clickable { cursor: pointer; }
+.hidden { display: none !important; }
 
-.asteroid {
-  position: absolute;
-  background-size: cover;
-  background-repeat: no-repeat;
-  border-radius: 10%;
-}
-
-
-.click-effect {
-  position: absolute;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: cyan;
-  opacity: 0.7;
-  pointer-events: none;
-  animation: blasterFlash 0.25s ease-out forwards;
-}
-
-@keyframes blasterFlash {
-  0% {
-    transform: scale(0.3);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-
-
-/* ===== MEDIA QUERIES PARA MÓVILES ===== */
+/* ========== RESPONSIVE / MOBILE ========== */
 @media (max-width: 768px) {
 
-  /* Robots */
-  .robot {
-    width: 60px !important;
-    height: 60px !important;
-  }
+  .robot { width: 60px !important; height: 60px !important; }
+  .robot img { width: 100% !important; height: 100% !important; }
 
-  .robot img {
-    width: 100% !important;
-    height: 100% !important;
-  }
+  .base { width: 120px !important; height: 120px !important; }
+  .base-image { width: 100% !important; height: 100% !important; }
 
-  .robot .health-bar {
-    width: 100% !important;
-    height: 8px !important;
-    bottom: -10px !important;
-  }
+  .defender { width: 80px !important; height: 80px !important; }
 
-  .robot .health-text {
-    font-size: 8px !important;
-  }
+  .health-bar { width: 120px !important; height: 10px !important; bottom: -12px; }
+  .health-text { font-size: 8px !important; }
 
-  /* Base */
-  .base {
-    width: 120px !important;   /* antes 210px */
-    height: 120px !important;  /* antes 210px */
-  }
+  .score-display { left: 12px; top: 8px; font-size: 12px; }
+  .round-timer { right: 10px; top: 8px; font-size: 12px; }
 
-  .base-image {
-    width: 100% !important;
-    height: 100% !important;
-  }
+  .menu-title { font-size: 24px; margin-top: 120px; }
+  .menu-instruction { font-size: 14px; margin-top: 420px; }
 
-  /* Defender */
-  .defender {
-    width: 80px !important;
-    height: 80px !important;
-  }
-
-  /* Score y timer más compactos */
-  .score-display {
-    font-size: 12px !important;
-    left: 10px !important;
-    top: 5px !important;
-  }
-
-  .round-timer {
-    font-size: 12px !important;
-    right: 10px !important;
-    top: 5px !important;
-  }
+  .shop-box { width: calc(100% - 20px); height: auto; max-height: 86vh; padding: 12px; }
+  .shop-grid { grid-template-columns: repeat(1, 1fr); gap: 12px; }
+  .shop-item { width: 100%; height: 140px; }
 }
 
+/* Small niceties */
+@media (hover:hover) {
+  .shop-item:active { transform: scale(0.995); }
+}
