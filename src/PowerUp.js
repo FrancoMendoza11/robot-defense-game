@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 
-const POWERUP_TYPES = {
+export const POWERUP_TYPES = {
   HEALTH: {
     color: '#00FF00',
     effect: 'health',

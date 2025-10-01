@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import TargetCursor from './TargetCursor';
 import Robot from './Robot';
-import PowerUp from './PowerUp';
+import PowerUp, { POWERUP_TYPES } from './PowerUp';
 
 import baseImage from './assets/base.gif';
 import menuGif from './assets/menu.gif';
